@@ -1,3 +1,11 @@
+#fairly quick build to search active directory for all computers with specific network card
+#uses wmic to avoid having remote run on
+#adds to an output file, which will then need some data massage
+#uses both Test-NetConnection and code from https://github.com/gangstanthony/PowerShell/blob/master/Test-Port.ps1
+#Test-NetConnection can include port, but my testing is showing that Test-Port.ps1 is a bit faster
+#wanted to do both so I can create alternate output in case ICMP is open, but RCP is closed on specific system
+#needs come cleanup to account for ICMP closed, but RCP open...
+
 Import-Module ActiveDirectory
 $file = "C:\ZombieFiles\NICSearch.txt"
 Remove-Item $file -ErrorAction SilentlyContinue
@@ -24,7 +32,6 @@ Get-ADComputer -SearchBase $locale -Filter '*' | %{
                 #check to see if problem adapter exists in system
                 $adapter | %{
                     if (($_).ToString().Contains("I217")) {
-                        Write-Host "we've got one"
                         ac $file -Value $computer
                         ac $file -Value $_
                     }
