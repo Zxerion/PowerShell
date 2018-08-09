@@ -1,0 +1,38 @@
+Import-Module ActiveDirectory
+$file = "C:\ZombieFiles\NICSearch.txt"
+Remove-Item $file -ErrorAction SilentlyContinue
+#pull entire OU
+$locale="OU=Employees,DC=zombie,DC=edu"
+Get-ADComputer -SearchBase $locale -Filter '*' | %{
+    $computer = $_.DNSHostName
+
+    $port = 135 #rpc port
+    $tcp = New-Object System.Net.Sockets.TcpClient
+
+    $tc=Test-NetConnection -ComputerName $computer -ErrorAction SilentlyContinue
+    if ($tc.PingSucceeded -eq $true){
+        try{
+            $tcp.Connect($computer, $port) #validate that rpc is open
+
+            if ($tcp.Connected) { $tcp.Close(); $open = $true } #close tcp and set true
+            else { $open = $false } #cannot connect, set false
+
+            #if open is true do the following
+            if ($open){
+                $adapter = wmic /node:$computer nic #pull all network adapter information
+
+                #check to see if problem adapter exists in system
+                $adapter | %{
+                    if (($_).ToString().Contains("I217")) {
+                        Write-Host "we've got one"
+                        ac $file -Value $computer
+                        ac $file -Value $_
+                    }
+                }
+            }
+            else { ac $file -Value "$computer,RPC CLOSED" } #rpc closed, update file
+        }
+        catch{}
+    }
+    else { ac $file -Value "$computer,UNABLE TO CONNECT TO SYSTEM" } #system off the network
+}
